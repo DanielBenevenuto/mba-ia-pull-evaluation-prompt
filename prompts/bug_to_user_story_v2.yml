@@ -67,6 +67,23 @@ bug_to_user_story_v2:
       - Cubra **todos** os aspectos mencionados no relato (importante para Recall).
       - Não adicione nada que não esteja no relato (importante para Precision).
       - Mantenha linguagem clara, concisa e sem jargão desnecessário.
+      - REGRA DE RECALL OBRIGATÓRIA: se o bug citar verbatim qualquer um dos
+        itens abaixo, eles DEVEM aparecer literalmente na seção apropriada
+        (Critérios, Contexto Técnico, Contexto do Bug, Contexto de Segurança):
+          * Severidade (ex: ALTA, CRÍTICA, BAIXA)
+          * Códigos OWASP, CVE, CWE
+          * Números mensuráveis (tempos, percentuais, R$, NPS, churn)
+          * Nomes de endpoints, status HTTP, queries SQL, stack traces
+          * IDs, navegadores, OSes, versões mencionadas
+          * Sugestões de solução já indicadas no bug
+      - REGRA DE RECALL PARA UI: bugs simples de UI devem incluir efeitos
+        observáveis pelo usuário ("confirmação visual", "contador atualizado",
+        "mensagem de erro clara", "redirecionamento", "estado do botão") como
+        critérios adicionais — esses efeitos são esperados em QA de qualidade.
+      - REGRA DE RECALL PARA CÁLCULO: bugs envolvendo cálculo (descontos,
+        totais, valores, MRR, métricas) DEVEM incluir um bloco "Exemplo de
+        Cálculo" passo a passo com os números do bug, mostrando subtotal,
+        operação e total esperado.
 
     # ESQUELETOS DE SAÍDA (Skeleton of Thought)
 
@@ -78,10 +95,21 @@ bug_to_user_story_v2:
     Critérios de Aceitação:
     - Dado que [contexto inicial]
     - Quando [ação do usuário ou do sistema]
-    - Então [resultado esperado principal]
-    - E [resultado adicional]
-    - E [resultado adicional]
+    - Então [resultado esperado principal — o efeito direto da correção]
+    - E [efeito observável adicional — feedback visual, mensagem, contador, redirecionamento]
+    - E [efeito observável adicional — equivalência cross-browser/OS, ou comportamento padrão]
     ```
+
+    Importante para SIMPLES: além do resultado principal, inclua 1-2 efeitos
+    observáveis que sejam claramente relevantes ao bug específico. Não force
+    padrões que não se aplicam — exemplos de padrões úteis quando relevantes:
+      * Atualização em tempo real / refresh automático (em dashboards e métricas)
+      * Filtro de status correto (em listagens e métricas)
+      * Feedback visual / confirmação (em ações do usuário)
+      * Contador / total atualizado (em carrinhos, listas, filtros)
+      * Mensagem clara explicando o erro (em validações)
+      * Bloqueio de prosseguimento (em validações)
+      * Equivalência cross-browser/OS (em bugs de UI específicos de plataforma)
 
     ## Esqueleto MÉDIO (bug com contexto técnico)
 
@@ -91,15 +119,33 @@ bug_to_user_story_v2:
     Critérios de Aceitação:
     - Dado que [contexto]
     - Quando [ação]
-    - Então [resultado esperado]
-    - E [resultado adicional]
-    - E [resultado adicional]
+    - Então [resultado esperado principal]
+    - E [resultado adicional — métrica numérica do bug, se houver]
+    - E [resultado adicional — comportamento padrão esperado]
 
-    Contexto Técnico:
-    - [Causa raiz identificada no bug, se houver]
-    - [Endpoints, logs, severidade, OWASP, tecnologias mencionadas]
-    - [Comportamento atual x comportamento esperado, com números se houver]
-    - [Sugestão de solução SOMENTE se o bug a mencionar]
+    [Sub-bloco OBRIGATÓRIO quando o bug pede — use o título adequado:
+       "Critérios Adicionais para Admins"   (bugs com papéis distintos: admin vs usuário comum)
+       "Critérios de Acessibilidade"         (bugs que mencionam teclado, ESC, ARIA, leitor de tela)
+       "Critérios de Auditoria"              (bugs com logs, rastreabilidade, compliance)
+       "Critérios de Prevenção"              (bugs onde devemos evitar repetição em outros cenários)
+       "Critérios para Cenário de Erro"      (bugs cuja referência distingue happy path × erro)
+    Cada sub-bloco tem 3-5 itens no estilo Given/When/Then.]
+
+    Contexto Técnico:  (ou "Contexto de Segurança" se o bug for de segurança)
+    - Severidade: [valor LITERAL do bug, ex: ALTA / CRÍTICA — só se mencionado]
+    - Tipo: [classificação do bug — ex: "Quebra de controle de acesso (OWASP A01:2021)"]
+    - Comportamento atual: [com números do bug — ex: ">120s para 1000+ registros"]
+    - Comportamento esperado: [com números do bug ou inferido — ex: "<30s"]
+    - Causa raiz / Indício: [APENAS o que o bug indica — ex: "falta de índice em data_venda"]
+    - Sugestão: [APENAS se o bug a indicar — ex: "adicionar índice e otimizar query SQL"]
+    - Dados expostos / Endpoints / Logs: [literal do bug, se houver]
+
+    Exemplo de Cálculo:  (inclua APENAS para bugs de cálculo / desconto / total / MRR)
+    - [Item 1]: [valor literal do bug]
+    - [Item 2]: [valor literal do bug]
+    - Subtotal: [soma]
+    - [Operação]: [resultado intermediário]
+    - Total: [resultado esperado literal do bug]
     ```
 
     ## Esqueleto COMPLEXO (múltiplos problemas / impacto crítico)
@@ -177,8 +223,13 @@ bug_to_user_story_v2:
         "Passo 1:", "Pensando passo a passo:". A saída é apenas a user story final.
     R8. Sem saudações nem despedidas. Sem "Aqui está a user story:". Sem
         comentários sobre o processo.
-    R9. Concisão: critérios de aceitação devem ter 4-7 itens em bugs simples/médios.
-        Em bugs complexos, agrupe por área para evitar listas de 30+ itens.
+    R9. Critérios de aceitação:
+        - Bugs SIMPLES: 4-6 critérios (1 Dado + 1 Quando + 1 Então + 1-3 "E").
+        - Bugs MÉDIOS: 5-7 critérios principais. Quando o bug envolver dois
+          atores claramente distintos (admin x usuário comum) ou cenários
+          contrastantes (sucesso x erro / retry / auditoria), adicione um
+          segundo bloco "Critérios Adicionais" — opcional, só se o bug pedir.
+        - Bugs COMPLEXOS: agrupe por área (A/B/C/D), com 4-6 critérios por grupo.
     R10. Proporcionalidade: NÃO adicione seções "Contexto Técnico" ou "Tasks
          Técnicas" em bugs simples. NÃO omita essas seções em bugs complexos.
 
@@ -203,7 +254,7 @@ bug_to_user_story_v2:
 
     # EXEMPLOS (Few-shot Learning)
 
-    ## Exemplo 1 — Bug SIMPLES
+    ## Exemplo 1a — Bug SIMPLES (UI / filtro)
 
     Entrada:
     "Filtro de busca de produtos por preço não está funcionando. Quando seleciono
@@ -219,7 +270,52 @@ bug_to_user_story_v2:
     - E produtos fora dessa faixa não devem aparecer
     - E a contagem de resultados deve refletir o filtro aplicado
 
-    ## Exemplo 2 — Bug MÉDIO
+    ## Exemplo 1b — Bug SIMPLES (validação de formulário)
+
+    Entrada:
+    "Campo de telefone aceita letras, permitindo cadastros com números inválidos."
+
+    Saída:
+    Como um usuário criando uma conta, eu quero que o sistema valide meu telefone corretamente, para que eu não cadastre um número inválido por engano.
+
+    Critérios de Aceitação:
+    - Dado que estou no formulário de cadastro
+    - Quando digito letras no campo de telefone
+    - Então devo ver uma mensagem de erro
+    - E não devo conseguir prosseguir com o cadastro
+    - E a mensagem deve explicar o formato correto do telefone
+
+    ## Exemplo 1c — Bug SIMPLES (UI, ação com efeito observável)
+
+    Entrada:
+    "Botão 'Favoritar' não funciona na página do produto ID 7890."
+
+    Saída:
+    Como um cliente navegando na loja, eu quero favoritar produtos, para que eu possa retornar a eles mais tarde sem precisar buscá-los novamente.
+
+    Critérios de Aceitação:
+    - Dado que estou visualizando um produto
+    - Quando clico no botão "Favoritar"
+    - Então o produto deve ser adicionado à lista de favoritos
+    - E devo ver uma confirmação visual
+    - E o contador de favoritos deve ser atualizado
+
+    ## Exemplo 1d — Bug SIMPLES (cross-browser / cross-device)
+
+    Entrada:
+    "Vídeos do tutorial não tocam no Firefox. No Edge funciona normal."
+
+    Saída:
+    Como um aluno usando Firefox, eu quero assistir aos vídeos do tutorial, para que eu possa estudar usando o navegador da minha preferência.
+
+    Critérios de Aceitação:
+    - Dado que estou navegando no Firefox
+    - Quando acesso a página de um tutorial
+    - Então os vídeos devem reproduzir corretamente
+    - E devem ter a mesma qualidade que em outros navegadores
+    - E o tempo de carregamento deve ser similar
+
+    ## Exemplo 2a — Bug MÉDIO (integração instável)
 
     Entrada:
     "Login com Google falha intermitentemente em produção.
@@ -245,6 +341,42 @@ bug_to_user_story_v2:
     - Frequência atual: ~20% das tentativas em produção
     - Indício: token OAuth expirando antes do prazo esperado
     - Ambiente afetado: apenas produção (staging não reproduz)
+
+    ## Exemplo 2b — Bug MÉDIO (regra de negócio com cálculo)
+
+    Entrada:
+    "Sistema de assinaturas calcula valor errado quando há cupom recorrente.
+
+    Cenário:
+    - Plano Pro: R$ 200/mês
+    - Cupom RECORRENTE10: 10% off em todas as mensalidades
+    - Valor esperado: R$ 180/mês
+    - Valor cobrado: R$ 200/mês (cupom ignorado a partir do 2º mês)
+
+    O cupom é aplicado só no primeiro mês."
+
+    Saída:
+    Como um cliente assinante com cupom recorrente, eu quero que o desconto seja aplicado em todas as mensalidades acordadas, para que eu pague o valor correto durante toda a vigência do cupom.
+
+    Critérios de Aceitação:
+    - Dado que tenho um cupom recorrente válido aplicado à minha assinatura
+    - Quando o sistema gera a cobrança de qualquer mês dentro da vigência
+    - Então o desconto percentual deve ser aplicado ao valor da mensalidade
+    - E o valor cobrado deve refletir o desconto exatamente
+    - E o detalhamento da fatura deve mostrar mensalidade, desconto e total
+
+    Contexto Técnico:
+    - Tipo: erro de regra de negócio em cobrança recorrente
+    - Comportamento atual: cupom aplicado apenas no 1º mês (R$ 180 → R$ 200 a partir do 2º)
+    - Comportamento esperado: cupom aplicado em todas as mensalidades de vigência
+    - Causa raiz indicada: regra de cupom não persistente entre ciclos de cobrança
+
+    Exemplo de Cálculo:
+    - Plano Pro: R$ 200
+    - Cupom RECORRENTE10: -10%
+    - Subtotal: R$ 200
+    - Desconto 10%: -R$ 20
+    - Total: R$ 180/mês
 
     ## Exemplo 3 — Bug COMPLEXO
 
@@ -340,6 +472,45 @@ bug_to_user_story_v2:
     - Latência da CDN em pico: 12s → <3s
     - NPS: 5.1 → ≥7.8
     - Cancelamentos atribuídos ao player: 12 → 0
+
+    # ESTILO DOS CRITÉRIOS DE ACEITAÇÃO
+
+    Escreva critérios como um QA experiente — concretos, observáveis e
+    testáveis em isolamento. Cada critério deve descrever uma consequência
+    específica que possa ser verificada por inspeção visual ou teste automatizado.
+
+    Evite paráfrases vagas como "deve funcionar bem", "deve responder
+    corretamente" ou "deve haver feedback adequado". Em vez disso, nomeie a
+    consequência exata — qual mensagem aparece, qual elemento muda, qual número
+    é exibido, qual status HTTP é retornado, qual valor é cobrado.
+
+    REFORÇO ANTI-ALUCINAÇÃO: NÃO acrescente padrões "stock" (log de auditoria,
+    email de confirmação, HTTP 403, equivalência cross-browser, retry, etc.) se
+    o bug não os mencionar nem deixar implícito. Cada critério precisa ter
+    base no que está no bug ou ser uma consequência natural e óbvia da correção
+    descrita no bug.
+
+    REGRA DE LITERALIDADE (importante para recall): quando o bug menciona
+    valores, nomes ou tokens específicos, reaproveite-os LITERAL e ENTRE ASPAS
+    nos critérios e no Contexto Técnico — não parafraseie. Isso inclui:
+
+      • Status HTTP: "HTTP 500", "HTTP 200", "HTTP 403 Forbidden" — verbatim
+      • Endpoints: "POST /api/webhooks/payment", "GET /api/users/:id" — verbatim
+      • Códigos de erro: "invalid_grant", "Connection pool exhausted" — entre aspas
+      • Status do domínio: "pendente", "aprovado", "ativo", "confirmado" — entre aspas
+      • IDs literais do bug: "produto ID 1234" — verbatim
+      • Navegadores / OSes: "Safari", "Chrome", "Firefox", "iOS", "Android" — verbatim
+      • Padrões OWASP/CVE: "OWASP A01:2021" — verbatim
+      • Severidade: "ALTA", "CRÍTICA" — verbatim
+      • Métricas numéricas: ">120s", "1000+ registros", "R$ 15.000", "NPS 8.5 → 4.2" — verbatim
+
+    Exemplo correto: "Então o endpoint deve retornar HTTP 200" (não "deve
+    retornar sucesso"). "E deve incluir apenas usuários com status 'ativo'"
+    (não "apenas usuários ativos"). "E o navegador Safari deve renderizar
+    como os demais" (não "deve funcionar em todos os navegadores").
+
+    Se o bug não menciona um valor literal, NÃO invente. A regra é: preserve
+    o que está; não preencha lacunas.
 
     # FORMATO FINAL DA RESPOSTA
 

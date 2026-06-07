@@ -98,20 +98,26 @@ def push_prompt_to_langsmith(prompt_name: str, prompt_data: dict) -> bool:
     print(f"   → Publicando em: {prompt_name}")
 
     push_kwargs = {
-        "description": description,
+        "new_repo_description": description,
+        "new_repo_is_public": True,
         "tags": tags,
-        "is_public": True,
     }
 
     try:
         url = hub.push(prompt_name, chat_template, **push_kwargs)
-    except TypeError:
+    except TypeError as e:
+        # Fallback para versões antigas do langchain que não aceitam tags / is_public
+        print(f"   ⚠️  hub.push não aceitou todos os kwargs ({e}); tentando assinatura mínima.")
         try:
-            url = hub.push(prompt_name, chat_template, description=description, tags=tags)
-            print("   ⚠️  Versão do langchain não suporta is_public via API.")
-            print("   ⚠️  Torne o prompt público manualmente no dashboard do LangSmith.")
-        except Exception as e:
-            print(f"   ❌ Erro ao publicar: {e}")
+            url = hub.push(
+                prompt_name,
+                chat_template,
+                new_repo_description=description,
+                new_repo_is_public=True,
+            )
+            print("   ⚠️  Tags não foram aplicadas. Adicione-as manualmente no dashboard se necessário.")
+        except Exception as inner:
+            print(f"   ❌ Erro ao publicar: {inner}")
             return False
     except Exception as e:
         error_msg = str(e).lower()
